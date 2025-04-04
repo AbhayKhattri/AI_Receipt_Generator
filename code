@@ -1,0 +1,35 @@
+!pip install pandas spacy rapidfuzz
+!python -m spacy download en_core_web_sm
+!pip install fuzzywuzzy
+!pip install python-Levenshtein
+import pandas as pd
+from fuzzywuzzy import process
+
+# Load dataset
+df = pd.read_csv("C:/Users/khatt/OneDrive - DIT University/Desktop/recipe_df.csv")
+df.rename(columns={'title': 'Dish', 'ingredients': 'Ingredients', 'directions': 'Steps'}, inplace=True)
+
+def find_best_matches(user_input, df, top_n=3):
+    """
+    Finds the best matching dishes from the dataset.
+    """
+    exact_match = df[df['Dish'].str.lower() == user_input.lower()]
+    
+    if not exact_match.empty:
+        return exact_match.iloc[0]
+    
+    matches = process.extract(user_input, df['Dish'], limit=top_n)
+    return [df[df['Dish'] == match[0]].iloc[0] for match in matches]
+
+# Get user input
+user_dish = input("Enter your dish name: ")
+matched_recipes = find_best_matches(user_dish, df)
+
+if isinstance(matched_recipes, pd.Series):
+    print(f"\n🍽 *Best match found: {matched_recipes['Dish']}*")
+    print(f"\n🥘 *Ingredients:* {matched_recipes['Ingredients']}")
+    print(f"\n📜 *Steps:* {matched_recipes['Steps']}")
+else:
+    print("\nSorry, exact match not found. Did you mean one of these?")
+    for recipe in matched_recipes:
+        print(f"- {recipe['Dish']}")
